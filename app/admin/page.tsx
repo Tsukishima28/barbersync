@@ -4,12 +4,12 @@
           <p className="text-lg font-bold text-[#D4AF37]">${ingresoDiario}</p>
         </div>
         <div className="p-3 bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg text-center">
-          <p className="text-[10px] text-gray-400 uppercase">Esta Semana</p>
-          <p className="text-lg font-bold text-[#D4AF37]">${ingresoSemanal}</p>
+          <p className="text-[10px] text-gray-400 uppercase">Esta Semana </p>
+          <p className="text-lg font-bold text-[#D4AF37]">${ingresoSemanal}/p>
         </div>
         <div className="p-3 bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg text-center">
           <p className="text-[10px] text-gray-400 uppercase">Este Mes</p>
-          <p className="text-lg font-bold text-[#D4AF37]">${ingresoMensual}</p>
+          <p className="text-lg font-bold text-[#D4AF37]">${ingresoMensual}/p>
         </div>
       </div>
 
