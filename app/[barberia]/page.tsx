@@ -81,12 +81,12 @@
           </div>
         )}
 
-        {/* Botón de Confirmar */}
-        <button
+
+        <button>
           type="submit"
           disabled={cargando}
           className="w-full py-4 bg-[#D4AF37] text-black font-bold uppercase rounded-lg shadow-lg hover:bg-[#b5932a] transition-all"
-          {cargando ? 'Procesando...' : 'Confirmar Cita por WhatsApp'}>
+          {cargando ? 'Procesando...' : 'Confirmar Cita por WhatsApp'}
         </button>
       </form>
     </div>
