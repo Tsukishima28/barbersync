@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { generarLinkWhatsApp } from "@/lib/whatsapp";
 import type { Servicio } from "@/types";
@@ -25,17 +25,26 @@ export default function Page({ params }: PageProps) {
   const [comprobante, setComprobante] = useState<File | null>(null);
   const [cargando, setCargando] = useState(false);
 
-  // Podrías cargar servicios con useEffect, aquí te dejo la función:
+  // Cargar servicios al montar
   async function cargarServicios() {
     const { data, error } = await supabase
       .from("servicios")
       .select("*")
       .eq("barberia_id", barberiaId);
 
-    if (!error && data) {
+    if (error) {
+      console.error("Error cargando servicios:", error);
+      return;
+    }
+
+    if (data) {
       setServicios(data as Servicio[]);
     }
   }
+
+  useEffect(() => {
+    cargarServicios();
+  }, [barberiaId]);
 
   async function manejarSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,14 +54,21 @@ export default function Page({ params }: PageProps) {
 
     if (metodoPago === "TRANSFERENCIA" && comprobante) {
       const nombreArchivo = `${barberiaId}-${Date.now()}-${comprobante.name}`;
-      const { data, error } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from("comprobantes")
         .upload(nombreArchivo, comprobante);
 
-      if (!error && data) {
+      if (uploadError) {
+        console.error("Error subiendo comprobante:", uploadError);
+        alert("No se pudo subir el comprobante. Intenta nuevamente.");
+        setCargando(false);
+        return;
+      }
+
+      if (uploadData?.path) {
         const { data: urlData } = supabase.storage
           .from("comprobantes")
-          .getPublicUrl(data.path);
+          .getPublicUrl(uploadData.path);
         comprobanteUrl = urlData.publicUrl;
       }
     }
@@ -75,13 +91,14 @@ export default function Page({ params }: PageProps) {
     if (!error && data) {
       const mensaje = `Hola, soy ${nombre}. Quiero confirmar mi cita para el servicio ${
         servicios.find((s) => s.id === servicioSeleccionado)?.nombre || ""
-      } el día ${new Date(fechaHora).toLocaleString()}.\n\nMétodo de pago: ${
-        metodoPago
-      }.`;
+      } el día ${new Date(fechaHora).toLocaleString()}.
+
+Método de pago: ${metodoPago}.`;
 
       const link = generarLinkWhatsApp(telefono, mensaje);
       window.open(link, "_blank");
     } else {
+      console.error("Error al crear cita:", error);
       alert("Hubo un error al crear la cita.");
     }
 

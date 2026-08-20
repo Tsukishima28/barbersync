@@ -11,15 +11,33 @@ export default function Page() {
   const [citas, setCitas] = useState<Cita[]>([]);
 
   async function cargarIngresos() {
-    // Aquí asumo que tienes funciones RPC en Supabase.
-    // Si no las tienes, puedes cambiar esto por selects normales.
-    const { data: diario } = await supabase.rpc("ingreso_diario");
-    const { data: semanal } = await supabase.rpc("ingreso_semanal");
-    const { data: mensual } = await supabase.rpc("ingreso_mensual");
+    // Manejo más robusto de RPCs: comprobamos errores y extraemos un número cuando sea posible
+    const { data: diario, error: errDiario } = await supabase.rpc("ingreso_diario");
+    const { data: semanal, error: errSemanal } = await supabase.rpc("ingreso_semanal");
+    const { data: mensual, error: errMensual } = await supabase.rpc("ingreso_mensual");
 
-    setIngresoDiario(diario || 0);
-    setIngresoSemanal(semanal || 0);
-    setIngresoMensual(mensual || 0);
+    if (errDiario) console.error("RPC ingreso_diario error:", errDiario);
+    if (errSemanal) console.error("RPC ingreso_semanal error:", errSemanal);
+    if (errMensual) console.error("RPC ingreso_mensual error:", errMensual);
+
+    const extractNumber = (val: any) => {
+      if (val == null) return 0;
+      if (typeof val === "number") return val;
+      if (Array.isArray(val)) {
+        const first = val[0];
+        if (typeof first === "number") return first;
+        if (first && typeof first === "object") {
+          return Number(first.ingreso ?? first.value ?? Object.values(first)[0]) || 0;
+        }
+      }
+      if (typeof val === "string") return Number(val) || 0;
+      if (typeof val === "object") return Number(val.ingreso ?? val.value) || 0;
+      return 0;
+    };
+
+    setIngresoDiario(extractNumber(diario));
+    setIngresoSemanal(extractNumber(semanal));
+    setIngresoMensual(extractNumber(mensual));
   }
 
   async function cargarCitas() {
@@ -44,15 +62,25 @@ export default function Page() {
       )
       .order("fecha_hora", { ascending: false });
 
-    if (!error && data) {
+    if (error) {
+      console.error("Error cargando citas:", error);
+      return;
+    }
+
+    if (data) {
       setCitas(data as Cita[]);
     }
   }
 
   async function cancelarCita(id: string, telefono: string) {
-    await supabase.from("citas").update({ estado: "CANCELADA" }).eq("id", id);
+    const { error } = await supabase.from("citas").update({ estado: "CANCELADA" }).eq("id", id);
+    if (error) {
+      console.error("Error cancelando cita:", error);
+      alert("No se pudo cancelar la cita.");
+      return;
+    }
     alert(`Cita cancelada. WhatsApp: ${telefono}`);
-    cargarCitas();
+    await cargarCitas(); // esperar a recargar
   }
 
   useEffect(() => {
